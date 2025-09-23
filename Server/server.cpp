@@ -6,6 +6,33 @@ Server::Server()
 {
 }
 
+bool check_portvalidity(const char *str)
+{
+    for (int i = 0; str[i]; i++)
+    {
+        if(!isdigit(str[i]) || i > 5)
+            return (false);
+    }
+    return (true);
+}
+bool check_passwordvalidity(const char *str)
+{
+    for(int i = 0; str[i];  i++)
+    {
+        if(!isprint(str[i]) || i > 500)
+            return (false);
+    }
+    return (true);
+}
+void Server::GetArgsToParse(const char ** const argv)
+{
+    if(!check_portvalidity(argv[1]))
+        throw std::runtime_error("incompatible port type of characters or out of range");
+    if(!check_passwordvalidity(argv[2]))
+        throw std::runtime_error("invalid password charcter or characters are to long");
+}
+
+
 int get_listening_socket()
 {
     int listener;
