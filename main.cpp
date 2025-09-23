@@ -6,9 +6,16 @@ int main(int argc, char **argv)
     {
         try
         {
-            Server::GetArgsToParse(argv);
+            Server::GetArgsToParse(const_cast<const char **>(argv));
+            std::cout << "Server starting with port " << argv[1] << std::endl;
+            return (0);
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return (1);
         }
     }
-    std::cout << argv[0] << " <port> <password>" << std::endl;
+    std::cout << "Usage: " << argv[0] << " <port> <password>" << std::endl;
     return (127);
 }
