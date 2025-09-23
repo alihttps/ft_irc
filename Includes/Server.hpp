@@ -27,7 +27,8 @@ class Server
 {
     private :
         Server();
-    public : 
+    public :
+        static void server_init();
         static void GetArgsToParse(const char ** const argv);
         ~Server();
 };

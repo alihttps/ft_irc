@@ -1,10 +1,10 @@
-#include "Server.hpp"
+#include "../Includes/Server.hpp"
 
 #define PORT "8080"
 
-Server::Server()
-{
-}
+// Server::Server()
+// {
+// }
 
 bool check_portvalidity(const char *str)
 {
@@ -46,7 +46,7 @@ int get_listening_socket()
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if (rv = getaddrinfo(NULL, PORT, &hints, &ai) != 0)
+    if ((rv = getaddrinfo(NULL, PORT, &hints, &ai)) != 0)
         throw std::runtime_error(gai_strerror(rv));
     
     for (p = ai; p != NULL ; p = ai->ai_next)
@@ -74,7 +74,66 @@ int get_listening_socket()
     return listener;
 }
 
-void server_init()
+void add_to_pfds(struct pollfd **pfds, int *newfd, int *fd_count, int *fd_size)
+{
+    if (*fd_count == *fd_size)
+    {
+        *fd_size *= 2;
+        *pfds = (struct pollfd*)realloc(*pfds, sizeof(**pfds) * (*fd_size));
+    }
+    (*pfds)[*fd_count].fd = *newfd;
+    (*pfds)[*fd_count].events = POLLIN;
+    (*pfds)[*fd_count].revents = 0;
+
+    (*fd_count)++;
+
+}
+
+void handle_new_connection (int listener, int *fd_count, int *fd_size, struct pollfd **pfds)
+{
+    struct sockaddr_storage remoteaddr; //cli adderess
+    struct sockaddr_in *s = (struct sockaddr_in*)&remoteaddr;
+    
+    socklen_t addrlen;
+    int newfd;
+    
+    char remoteIP[INET_ADDRSTRLEN];
+    
+    addrlen = sizeof(remoteaddr);
+    
+    newfd = accept(listener, (struct sockaddr*) &remoteaddr, &addrlen);
+    if (newfd < 0)
+        throw std::runtime_error("accept error");
+    std::cout << "new connection from " << inet_ntop(remoteaddr.ss_family, &(s->sin_addr), remoteIP, sizeof(remoteIP)) << " on socket " << newfd << std::endl;
+    
+    add_to_pfds(pfds, &newfd, fd_count, fd_size);
+}
+
+void handle_client()
+{
+
+}
+
+void process_connections(int listener, int *fd_count, int *fd_size, struct pollfd **pfds)
+{
+    for (int i = 0; i < *fd_count; i++)
+    { 
+        if ((*pfds)[i].revents & POLLIN)
+        {
+            if ((*pfds)[i].fd == listener)
+            {
+                std::cout << "new\n";
+                handle_new_connection(listener, fd_count, fd_size,pfds); //if we r the listener its a new connection
+            }
+            // else
+                // handle_client(listener, fd_count, pfds, &i); // regular client
+
+        }
+    }
+    
+}
+
+void Server::server_init()
 {
     int listener;
 

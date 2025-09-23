@@ -6,6 +6,7 @@ int main(int argc, char **argv)
     {
         try
         {
+            Server::server_init();
             Server::GetArgsToParse(const_cast<const char **>(argv));
             std::cout << "Server starting with port " << argv[1] << std::endl;
             return (0);
