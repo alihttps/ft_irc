@@ -1,6 +1,7 @@
 #include "Client.hpp"
 #include "Server.hpp"
 #define MSG_MAX 512
+#include <algorithm>
 
 std::vector<std::string> splitset(std::string buff)
 {
@@ -26,6 +27,7 @@ std::vector<std::string> splitset(std::string buff)
             i--;
         data.push_back(buff.substr(i + 1 , buff.size()));
     }
+    data.erase(std::find(data.begin(), data.end(), ""));  
     return (data);
 }
 Client::Client(int fd, char *password) : _fd(fd), _password(password)
@@ -38,7 +40,7 @@ std::string Client::ClientInvoke()
     // recv(_fd, buff, MSG_MAX, 0);
     // std::string result(buff);
     std::vector<std::string> newer_model;
-    std::string  nuff = "            hello world and everyone";
+    std::string  nuff = "            hello world and   asdasd: : 123123  asdasdasdasd everyone      ";
     newer_model = splitset(nuff);
     for (std::vector<std::string>::iterator it = newer_model.begin(); it != newer_model.end(); it++)
         std::cout << *it << std::endl;
