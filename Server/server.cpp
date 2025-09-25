@@ -46,7 +46,7 @@ int get_listening_socket()
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if (rv = getaddrinfo(NULL, PORT, &hints, &ai) != 0)
+    if ((rv = getaddrinfo(NULL, PORT, &hints, &ai)) != 0)
         throw std::runtime_error(gai_strerror(rv));
     
     for (p = ai; p != NULL ; p = ai->ai_next)
@@ -99,6 +99,6 @@ void server_init()
         if (pollcount == -1)
             throw std::runtime_error("poll\n");
         
-        process_connections(listener, &fd_count, &fd_size, &pfds);
+        // process_connections(listener, &fd_count, &fd_size, &pfds);
     }
 }

@@ -1,11 +1,52 @@
 #include "Client.hpp"
+#include "Server.hpp"
+#define MSG_MAX 512
 
-Client::Client()
+std::vector<std::string> splitset(std::string buff)
 {
-    // Constructor implementation
+    std::vector<std::string> data; 
+    int hold = 0;
+    int i;
+    while(buff[hold] == ' ')
+        hold++;
+    i = hold;
+    for ( ; buff[i]; i++)
+    {
+        if (buff[i] == ' ')
+        {
+            data.push_back(buff.substr(hold, i - hold));
+            while(buff[i] == ' ')
+                i++;
+            hold = i;
+        }
+    }
+    if(!buff[i])
+    {
+        while(buff[i] != ' ')
+            i--;
+        data.push_back(buff.substr(i + 1 , buff.size()));
+    }
+    return (data);
+}
+Client::Client(int fd, char *password) : _fd(fd), _password(password)
+{
+}
+std::string Client::ClientInvoke()
+{
+    // char buff[513];
+    // buff[MSG_MAX + 1] = '\0';
+    // recv(_fd, buff, MSG_MAX, 0);
+    // std::string result(buff);
+    std::vector<std::string> newer_model;
+    std::string  nuff = "            hello world and everyone";
+    newer_model = splitset(nuff);
+    for (std::vector<std::string>::iterator it = newer_model.begin(); it != newer_model.end(); it++)
+        std::cout << *it << std::endl;
+    // registration(result);
+    // return result;
+    return "";
 }
 
 Client::~Client()
 {
-    // Destructor implementation
 }
