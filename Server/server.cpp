@@ -57,7 +57,6 @@ int get_listening_socket()
             continue;
         
         setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-
         if (bind(listener, p->ai_addr, p->ai_addrlen) < 0)
         {
             close(listener);
@@ -68,6 +67,8 @@ int get_listening_socket()
 
     if (!p)
         throw std::runtime_error("couldnt get bound\n");
+
+    freeaddrinfo(ai);
 
     if (listen(listener, SOMAXCONN) < 0) 
     {
@@ -81,7 +82,12 @@ int get_listening_socket()
 
 void Server::add_to_pfds(int *newfd, int *fd_count, int *fd_size)
 {
-    pfds.push_back({*newfd, POLLIN, 0});
+    (void)fd_size;
+    struct pollfd pfd;
+    pfd.fd = *newfd;
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+    pfds.push_back(pfd);
     (*fd_count)++;
 
 }
@@ -184,16 +190,25 @@ void Server::server_init()
         throw std::runtime_error("error in listening socket\n");
     fd_count = 1;
 
-    pfds.push_back({listener, POLLIN, 0});
+    struct pollfd pfd;
+    pfd.fd = listener;
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+
+    pfds.push_back(pfd);
 
     std::cout << "server waiting for connection ..." << std::endl;
 
     while (true)
     {
-        int pollcount = poll(pfds.data(), fd_count, -1);
+        int pollcount = poll(&pfds[0], fd_count, -1);
         if (pollcount == -1)
             throw std::runtime_error("poll\n");
         
         process_connections(listener, &fd_count, &fd_size);
     }
 }
+
+
+Server::~Server()
+{}

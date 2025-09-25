@@ -33,7 +33,7 @@ class Server
         int fd_count;
         int listener;
         void add_to_pfds(int *newfd, int *fd_count, int *fd_size);
-        void Server::del_from_pfds(int i ,int *fd_count);
+        void del_from_pfds(int i ,int *fd_count);
         void handle_new_connection (int listener, int *fd_count, int *fd_size);
         void handle_client(int listener, int *fd_count, int *i);
         void process_connections(int listener, int *fd_count, int *fd_size);
