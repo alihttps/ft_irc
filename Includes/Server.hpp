@@ -27,16 +27,15 @@ class Server
 {
     private :
         struct addrinfo hints, *ai, *p;
-        struct sockaddr_storage remoteaddr;
         std::vector<struct pollfd> pfds;
-        int fd_size;
         int fd_count;
         int listener;
-        void add_to_pfds(int *newfd, int *fd_count, int *fd_size);
-        void del_from_pfds(int i ,int *fd_count);
-        void handle_new_connection (int listener, int *fd_count, int *fd_size);
-        void handle_client(int listener, int *fd_count, int *i);
-        void process_connections(int listener, int *fd_count, int *fd_size);
+        void add_to_pfds(const int &newfd);
+        void del_from_pfds(const int &i);
+        void handle_new_connection();
+        void handle_client(const int &i);
+        int  set_listening_socket();
+        void process_connections();
         static void GetArgsToParse(const char ** const argv);
         Server();
         
