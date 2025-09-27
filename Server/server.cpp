@@ -2,8 +2,9 @@
 
 #define PORT "8080"
 
-Server::Server()
+Server::Server() : fd_count(0), listener(-1)
 {
+    
 }
 
 
@@ -34,13 +35,11 @@ void Server::GetArgsToParse(const char ** const argv)
 }
 
 
-int get_listening_socket()
+int Server::set_listening_socket()
 {
-    int listener;
     int yes = 1;
     int rv;
-
-    struct addrinfo hints, *ai, *p;
+    char ipstr[INET_ADDRSTRLEN];
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -62,6 +61,10 @@ int get_listening_socket()
             close(listener);
             continue;
         }
+        struct sockaddr_in *addr_in = (struct sockaddr_in *)p->ai_addr;
+        inet_ntop(AF_INET, &(addr_in->sin_addr), ipstr, sizeof(ipstr));
+        std::cout << "Listening on " << ipstr << ":" << PORT << std::endl;
+
         break;
     }
 
@@ -80,19 +83,18 @@ int get_listening_socket()
     return listener;
 }
 
-void Server::add_to_pfds(int *newfd, int *fd_count, int *fd_size)
+void Server::add_to_pfds(const int &newfd)
 {
-    (void)fd_size;
     struct pollfd pfd;
-    pfd.fd = *newfd;
+    pfd.fd = newfd;
     pfd.events = POLLIN;
     pfd.revents = 0;
     pfds.push_back(pfd);
-    (*fd_count)++;
+    fd_count++;
 
 }
 
-void Server::handle_new_connection (int listener, int *fd_count, int *fd_size)
+void Server::handle_new_connection()
 {
     struct sockaddr_storage remoteaddr; //cli adderess
     struct sockaddr_in *s = (struct sockaddr_in*)&remoteaddr;
@@ -109,47 +111,46 @@ void Server::handle_new_connection (int listener, int *fd_count, int *fd_size)
         throw std::runtime_error("accept error");
     std::cout << "new connection from " << inet_ntop(remoteaddr.ss_family, &(s->sin_addr), remoteIP, sizeof(remoteIP)) << " on socket " << newfd << std::endl;
     
-    add_to_pfds(&newfd, fd_count, fd_size);
+    add_to_pfds(newfd);
 }
 
-void Server::del_from_pfds(int i ,int *fd_count)
+void Server::del_from_pfds(const int &i)
 {
     pfds[i].fd = -1;
 
-    (*fd_count)--;
+    fd_count--;
 }
 
-void Server::handle_client(int listener, int *fd_count, int *i)
+void Server::handle_client(const int &i)
 {
     char buffer[4096];
     
-    int nbytes = recv(pfds[*i].fd, buffer, sizeof(buffer), 0);
+    int nbytes = recv(pfds[i].fd, buffer, sizeof(buffer), 0);
 
-    int sender_fd = pfds[*i].fd;
+    const int sender_fd = pfds[i].fd;
 
     if (nbytes <= 0)
     {
         if (nbytes == 0) //closed connection
         {
-            std::cout << "socket " << pfds[*i].fd << " hung up\n";
+            std::cout << "socket " << pfds[i].fd << " hung up\n";
         }
         else
             perror("recv");
         
-        close(pfds[*i].fd);
-        del_from_pfds(*i , fd_count);
+        close(pfds[i].fd);
+        del_from_pfds(i);
     }
     else
     {
-        std::cout << "server : received from " << pfds[*i].fd << " :" << buffer;
+        std::cout << "server : received from " << pfds[i].fd << " :" << buffer;
 
-        for (int j = 0; j < *fd_count; j++)
+        for (int j = 0; j < fd_count; j++)
         {
             int dest_fd = pfds[j].fd;
 
             if (pfds[j].fd != listener && pfds[j].fd != sender_fd)
             {
-                // std::string msg =  "new message : " + std::string(buffer);
                 int s_bytes = send(dest_fd, buffer, nbytes, 0);
                 if (s_bytes < 0)
                     throw std::runtime_error("send fail");
@@ -161,19 +162,18 @@ void Server::handle_client(int listener, int *fd_count, int *i)
         
 }
 
-void Server::process_connections(int listener, int *fd_count, int *fd_size)
+void Server::process_connections()
 {
-    for (int i = 0; i < *fd_count; i++)
+    for (int i = 0; i < fd_count; i++)
     { 
         if (pfds[i].revents & POLLIN)
         {
             if (pfds[i].fd == listener)
             {
-                std::cout << "new\n";
-                handle_new_connection(listener, fd_count, fd_size); //if we r the listener its a new connection
+                handle_new_connection(); //if we r the listener its a new connection
             }
             else
-                handle_client(listener, fd_count, &i); // regular client
+                handle_client(i); // regular client
         }
     }
     
@@ -181,11 +181,7 @@ void Server::process_connections(int listener, int *fd_count, int *fd_size)
 
 void Server::server_init() 
 {
-    fd_size = 5;
-    fd_count = 0;
-    listener = -1;
-
-    listener = get_listening_socket();
+    listener = set_listening_socket();
     if (listener == -1)
         throw std::runtime_error("error in listening socket\n");
     fd_count = 1;
@@ -205,7 +201,7 @@ void Server::server_init()
         if (pollcount == -1)
             throw std::runtime_error("poll\n");
         
-        process_connections(listener, &fd_count, &fd_size);
+        process_connections();
     }
 }
 
