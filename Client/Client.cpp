@@ -1,7 +1,8 @@
 #include "Client.hpp"
 #include "Server.hpp"
-#define MSG_MAX 512
 #include <algorithm>
+
+#define MSG_MAX 512
 
 std::vector<std::string> splitset(std::string buff)
 {
