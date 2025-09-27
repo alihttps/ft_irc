@@ -8,13 +8,8 @@ int main(int argc, char **argv)
     {
         try
         {
-            Server::GetArgsToParse(const_cast<const char **>(argv));
-            // to test
-            {
-                int fd = open("test", O_RDWR | O_CREAT, 0666);
-                Client client(fd, argv[2]);
-                client.ClientInvoke();
-            }
+            Server::get_server().server_init();
+            // Server::GetArgsToParse(const_cast<const char **>(argv));
             std::cout << "Server starting with port " << argv[1] << std::endl;
             return (0);
         }
