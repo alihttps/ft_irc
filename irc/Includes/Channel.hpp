@@ -7,7 +7,8 @@ class Channel
 {
   private:
     // channel attributes
-    std::string name;
+    std::string _username;
+    std::string _nickname;
     std::string topic;
     std::string password;
     std::set<int> members;          // fds of each client;
@@ -20,9 +21,9 @@ class Channel
 
   public:
     // Getters
-    const std::string &getName() const
+    const Channel &getName() const
     {
-        return (name);
+        return (Channel());
     }
     const std::string &getTopic() const
     {

@@ -14,8 +14,8 @@ bool check_portvalidity(const char *str)
     {
         if(!isdigit(str[i]) || i > 5)
             return (false);
-    }
-    return (true);
+    } 
+    return (atoi(str) > 65535);
 }
 bool check_passwordvalidity(const char *str)
 {
@@ -32,6 +32,7 @@ void Server::GetArgsToParse(const char ** const argv)
         throw std::runtime_error("incompatible port type of characters or out of range");
     if(!check_passwordvalidity(argv[2]))
         throw std::runtime_error("invalid password charcter or characters are to long");
+    _port = argv[1];
 }
 
 

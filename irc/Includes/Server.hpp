@@ -29,6 +29,7 @@ class Server
 	std::vector<struct pollfd> pfds;
 	int fd_count;
 	int listener;
+	static std::string _port;
 	void add_to_pfds(const int &newfd);
 	void del_from_pfds(const int &i);
 	void handle_new_connection();
