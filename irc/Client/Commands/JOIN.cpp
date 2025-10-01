@@ -2,7 +2,8 @@
 
 // JOIN command implementation
 // This file will contain the JOIN command logic for IRC
-std::vector<std::string> ft_split_request(std::string &request,const std::string &delimiter)
+std::vector<std::string> ft_split_request(std::string &request,
+	const std::string &delimiter)
 {
 	size_t	end;
 	size_t	start;
@@ -23,26 +24,49 @@ std::vector<std::string> ft_split_request(std::string &request,const std::string
 	lines.push_back(request.substr(start));
 	return (lines);
 }
-int check_channel_name(std::string &c_name)
+int	check_channel_name(std::string &c_name)
 {
-    if(c_name[0] == '#')
+	if (c_name.length() > 1)
 	{
-		if(c_name.length() > 1)
-		return 1;
+		if (c_name[0] == '#')
+			return (1);
 	}
-	return 0;
+	return (0);
+}
+int	check_allchannels_name(std::vector<std::string> &channels)
+{
+	for (int i = 0; i < channels.size(); i++)
+	{
+		if(check_channel_name(channels[i]) == 0)
+		return i; // returning which on is not valid
+	}
+	return 0; //succes
+}
+int	count_char_in_string(std::string &stringg, char c)
+{
+	int	i;
+	int	count;
+
+	i = 0;
+	count = 0;
+	while (i < stringg.length())
+	{
+		if (stringg[i] == c)
+			count++;
+		i++;
+	}
+	return (count);
 }
 
-int valid_syntax(std::string &request)
+int	valid_syntax(std::string &request)
 {
-    std::vector<std::string> divided = ft_split_request(request, " ");
-    if(divided.size() < 2)
-        throw("error not enough parametres \n");
-    if(divided[0] == "JOIN")
-    {
-		if(check_channel_name(divided[0] = 1))
-
-    }
+	std::vector<std::string> divided = ft_split_request(request, " ");
+	if (divided.size() < 2)
+		throw("error not enough parametres \n");
+	if (divided[0] == "JOIN")
+	{
+		
+	}
 }
 // void	addMember(int client_fd, const std::string &nick)
 // {
