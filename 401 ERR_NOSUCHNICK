@@ -1,0 +1,87 @@
+401 ERR_NOSUCHNICK
+    "<nickname> :No such nick/channel"
+    - Used to indicate the nickname parameter supplied to a command is currently unused.
+
+403 ERR_NOSUCHCHANNEL
+    "<channel name> :No such channel"
+    - Used to indicate the given channel name is invalid.
+
+404 ERR_CANNOTSENDTOCHAN
+    "<channel name> :Cannot send to channel"
+    - Sent to a user who cannot send a PRIVMSG to the channel due to channel modes or permissions.
+
+421 ERR_UNKNOWNCOMMAND
+    "<command> :Unknown command"
+    - Returned to a registered client to indicate that the command sent is unknown by the server.
+
+431 ERR_NONICKNAMEGIVEN
+    ":No nickname given"
+    - Returned when a nickname parameter expected for a command isn't found.
+
+432 ERR_ERRONEUSNICKNAME
+    "<nick> :Erroneus nickname"
+    - Returned after receiving a NICK message with invalid characters.
+
+433 ERR_NICKNAMEINUSE
+    "<nick> :Nickname is already in use"
+    - Returned when a NICK message attempts to use an existing nickname.
+
+441 ERR_USERNOTINCHANNEL
+    "<nick> <channel> :They aren't on that channel"
+    - Returned when the target user of a command is not on the given channel.
+
+442 ERR_NOTONCHANNEL
+    "<channel> :You're not on that channel"
+    - Returned when a client tries to perform a channel command but isn't a member.
+
+443 ERR_USERONCHANNEL
+    "<user> <channel> :is already on channel"
+    - Returned when a client tries to invite a user to a channel they are already on.
+
+451 ERR_NOTREGISTERED
+    ":You have not registered"
+    - Returned when the client must be registered before the server will allow it to be parsed in detail.
+
+461 ERR_NEEDMOREPARAMS
+    "<command> :Not enough parameters"
+    - Returned when a command does not supply enough parameters.
+
+462 ERR_ALREADYREGISTRED
+    ":You may not reregister"
+    - Returned when a client tries to change part of the registered details after registration.
+
+464 ERR_PASSWDMISMATCH
+    ":Password incorrect"
+    - Returned when a password required for registration is missing or incorrect.
+
+467 ERR_KEYSET
+    "<channel> :Channel key already set"
+    - Returned when trying to set a key for a channel that already has one.
+
+471 ERR_CHANNELISFULL
+    "<channel> :Cannot join channel (+l)"
+    - Returned when a channel is full.
+
+472 ERR_UNKNOWNMODE
+    "<char> :is unknown mode char to me"
+    - Returned when an unknown mode character is used.
+
+473 ERR_INVITEONLYCHAN
+    "<channel> :Cannot join channel (+i)"
+    - Returned when trying to join an invite-only channel.
+
+475 ERR_BADCHANNELKEY
+    "<channel> :Cannot join channel (+k)"
+    - Returned when trying to join a channel with a bad key.
+
+482 ERR_CHANOPRIVSNEEDED
+    "<channel> :You're not channel operator"
+    - Returned when a command requires channel operator privileges.
+
+501 ERR_UMODEUNKNOWNFLAG
+    ":Unknown MODE flag"
+    - Returned when a MODE message is sent with an unknown flag.
+
+502 ERR_USERSDONTMATCH
+    ":Cant change mode for other users"
+    - Returned when a user tries to change the mode for another user.
