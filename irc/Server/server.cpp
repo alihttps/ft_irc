@@ -47,7 +47,7 @@ int Server::set_listening_socket()
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if ((rv = getaddrinfo(NULL, "8080", &hints, &ai)) != 0)
+    if (rv = getaddrinfo(NULL, PORT, &hints, &ai) != 0)
         throw std::runtime_error(gai_strerror(rv));
     
     for (p = ai; p != NULL ; p = ai->ai_next)
