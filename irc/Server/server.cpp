@@ -1,7 +1,8 @@
-#include "../Includes/Server.hpp"
+#include "Server.hpp"
 
-#define PORT "8080"
+Server::Server() : listener(-1) {}
 
+<<<<<<< HEAD:irc/Server/server.cpp
 Server::Server() : fd_count(0), listener(-1)
 {
     
@@ -37,26 +38,45 @@ void Server::GetArgsToParse(const char ** const argv)
 
 
 int Server::set_listening_socket()
+=======
+void Server::make_non_blocking(int fd) {
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
+        std::cerr << "fcntl failed on fd " << fd << std::endl;
+    }
+}
+
+int Server::get_listening_socket(const char *port)
+>>>>>>> robo:Server/server.cpp
 {
     int yes = 1;
+<<<<<<< HEAD:irc/Server/server.cpp
     int rv;
     char ipstr[INET_ADDRSTRLEN];
+=======
+    struct addrinfo hints, *ai, *p;
+>>>>>>> robo:Server/server.cpp
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
+<<<<<<< HEAD:irc/Server/server.cpp
     if (rv = getaddrinfo(NULL, PORT, &hints, &ai) != 0)
+=======
+    int rv = getaddrinfo(NULL, port, &hints, &ai);
+    if (rv != 0)
+>>>>>>> robo:Server/server.cpp
         throw std::runtime_error(gai_strerror(rv));
-    
-    for (p = ai; p != NULL ; p = ai->ai_next)
+
+    for (p = ai; p != NULL; p = p->ai_next)
     {
         listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (listener < 0)
             continue;
-        
+        make_non_blocking(listener);
         setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+<<<<<<< HEAD:irc/Server/server.cpp
         if (bind(listener, p->ai_addr, p->ai_addrlen) < 0)
         {
             close(listener);
@@ -67,23 +87,27 @@ int Server::set_listening_socket()
         std::cout << "Listening on " << ipstr << ":" << PORT << std::endl;
 
         break;
+=======
+
+        if (bind(listener, p->ai_addr, p->ai_addrlen) == 0)
+            break;
+
+        close(listener);
+>>>>>>> robo:Server/server.cpp
     }
 
     if (!p)
-        throw std::runtime_error("couldnt get bound\n");
+        throw std::runtime_error("failed to bind socket");
 
     freeaddrinfo(ai);
 
-    if (listen(listener, SOMAXCONN) < 0) 
-    {
-        perror("listen");
-        close(listener);
-        throw std::runtime_error("listening error");
-    }
-    
+    if (listen(listener, SOMAXCONN) < 0)
+        throw std::runtime_error("listen failed");
+
     return listener;
 }
 
+<<<<<<< HEAD:irc/Server/server.cpp
 void Server::add_to_pfds(const int &newfd)
 {
     struct pollfd pfd;
@@ -95,20 +119,27 @@ void Server::add_to_pfds(const int &newfd)
 
 }
 
+=======
+
+void Server::add_fd(int fd)
+{
+    pollfd pfd;
+    pfd.fd = fd;
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+    pfds.push_back(pfd);
+}
+
+
+>>>>>>> robo:Server/server.cpp
 void Server::handle_new_connection()
 {
-    struct sockaddr_storage remoteaddr; //cli adderess
-    struct sockaddr_in *s = (struct sockaddr_in*)&remoteaddr;
-    
-    socklen_t addrlen;
-    int newfd;
-    
-    char remoteIP[INET_ADDRSTRLEN];
-    
-    addrlen = sizeof(remoteaddr);
-    
-    newfd = accept(listener, (struct sockaddr*) &remoteaddr, &addrlen);
+    sockaddr_storage remoteaddr;
+    socklen_t addrlen = sizeof(remoteaddr);
+
+    int newfd = accept(listener, (sockaddr *)&remoteaddr, &addrlen);
     if (newfd < 0)
+<<<<<<< HEAD:irc/Server/server.cpp
         throw std::runtime_error("accept error");
     std::cout << "new connection from " << inet_ntop(remoteaddr.ss_family, &(s->sin_addr), remoteIP, sizeof(remoteIP)) << " on socket " << newfd << std::endl;
     
@@ -116,9 +147,27 @@ void Server::handle_new_connection()
 }
 
 void Server::del_from_pfds(const int &i)
-{
-    pfds[i].fd = -1;
+=======
+        return;
 
+    make_non_blocking(newfd);
+    add_fd(newfd);
+    char ip[INET_ADDRSTRLEN];
+    sockaddr_in *s = (sockaddr_in *)&remoteaddr;
+    inet_ntop(AF_INET, &s->sin_addr, ip, sizeof(ip));
+
+    std::cout << "New connection from " << ip
+              << " on socket " << newfd << std::endl;
+}
+
+
+void Server::handle_client(size_t &i)
+>>>>>>> robo:Server/server.cpp
+{
+char buffer[4096];
+    int fd = pfds[i].fd;
+
+<<<<<<< HEAD:irc/Server/server.cpp
     fd_count--;
 }
 
@@ -129,9 +178,32 @@ void Server::handle_client(const int &i)
     int nbytes = recv(pfds[i].fd, buffer, sizeof(buffer), 0);
 
     const int sender_fd = pfds[i].fd;
+=======
+    int nbytes = recv(fd, buffer, sizeof(buffer) - 1, 0);
 
-    if (nbytes <= 0)
+    if (nbytes < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) 
+        {
+            i++;
+            return;
+        }
+        nbytes = 0; 
+    }
+
+    if (nbytes == 0) {
+        std::cout << "Socket " << fd << " disconnected\n";
+        close(fd);
+        pfds.erase(pfds.begin() + i);
+        return; 
+    }
+>>>>>>> robo:Server/server.cpp
+
+    buffer[nbytes] = '\0';
+    std::cout << "Received from " << fd << ": " << buffer;
+
+    for (size_t j = 0; j < pfds.size(); j++)
     {
+<<<<<<< HEAD:irc/Server/server.cpp
         if (nbytes == 0) //closed connection
         {
             std::cout << "socket " << pfds[i].fd << " hung up\n";
@@ -203,9 +275,49 @@ void Server::server_init()
             throw std::runtime_error("poll\n");
         
         process_connections();
+=======
+        if (pfds[j].fd != listener && pfds[j].fd != fd)
+            send(pfds[j].fd, buffer, nbytes, 0);
+    }
+
+    i++;
+}
+
+
+void Server::server_run(const char *port)
+{
+    listener = get_listening_socket(port);
+    add_fd(listener);
+
+    std::cout << "Server listening on port " << port << std::endl;
+
+    while (true)
+    {
+        if (poll(pfds.data(), pfds.size(), -1) < 0)
+            throw std::runtime_error("poll failed");
+
+        for (size_t i = 0; i < pfds.size(); )
+        {
+            if (pfds[i].revents & POLLIN)
+            {
+                if (pfds[i].fd == listener)
+                {
+                    handle_new_connection();
+                    i++;
+                }
+                else
+                    handle_client(i);
+            }
+            else
+                i++;
+        }
+>>>>>>> robo:Server/server.cpp
     }
 }
 
 
 Server::~Server()
-{}
+{
+    for (size_t i = 0; i < pfds.size(); i++)
+        close(pfds[i].fd);
+}
