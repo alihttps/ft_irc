@@ -2,11 +2,12 @@
 
 int main(int argc, char **argv)
 {
+    signal(SIGPIPE, SIG_IGN);
     if(argc == 3)
     {
         try
         {
-            Server::get_server().server_init();
+            Server::get_server().server_run(argv[1]);
             // Server::GetArgsToParse(const_cast<const char **>(argv));
             std::cout << "Server starting with port " << argv[1] << std::endl;
             return (0);

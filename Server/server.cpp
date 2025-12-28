@@ -1,45 +1,17 @@
-#include "../Includes/Server.hpp"
+#include "Server.hpp"
 
-#define PORT "8080"
+Server::Server() : listener(-1) {}
 
-Server::Server()
-{
-}
-
-
-bool check_portvalidity(const char *str)
-{
-    for (int i = 0; str[i]; i++)
-    {
-        if(!isdigit(str[i]) || i > 5)
-            return (false);
+void Server::make_non_blocking(int fd) {
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
+        std::cerr << "fcntl failed on fd " << fd << std::endl;
     }
-    return (true);
-}
-bool check_passwordvalidity(const char *str)
-{
-    for(int i = 0; str[i];  i++)
-    {
-        if(!isprint(str[i]) || i > 500)
-            return (false);
-    }
-    return (true);
-}
-void Server::GetArgsToParse(const char ** const argv)
-{
-    if(!check_portvalidity(argv[1]))
-        throw std::runtime_error("incompatible port type of characters or out of range");
-    if(!check_passwordvalidity(argv[2]))
-        throw std::runtime_error("invalid password charcter or characters are to long");
 }
 
-
-int get_listening_socket()
+int Server::get_listening_socket(const char *port)
 {
     int listener;
     int yes = 1;
-    int rv;
-
     struct addrinfo hints, *ai, *p;
 
     memset(&hints, 0, sizeof(hints));
@@ -47,168 +19,135 @@ int get_listening_socket()
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if ((rv = getaddrinfo(NULL, "8080", &hints, &ai)) != 0)
+    int rv = getaddrinfo(NULL, port, &hints, &ai);
+    if (rv != 0)
         throw std::runtime_error(gai_strerror(rv));
-    
-    for (p = ai; p != NULL ; p = ai->ai_next)
+
+    for (p = ai; p != NULL; p = p->ai_next)
     {
         listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (listener < 0)
             continue;
-        
+        make_non_blocking(listener);
         setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-        if (bind(listener, p->ai_addr, p->ai_addrlen) < 0)
-        {
-            close(listener);
-            continue;
-        }
-        break;
+
+        if (bind(listener, p->ai_addr, p->ai_addrlen) == 0)
+            break;
+
+        close(listener);
     }
 
     if (!p)
-        throw std::runtime_error("couldnt get bound\n");
+        throw std::runtime_error("failed to bind socket");
 
     freeaddrinfo(ai);
 
-    if (listen(listener, SOMAXCONN) < 0) 
-    {
-        perror("listen");
-        close(listener);
-        throw std::runtime_error("listening error");
-    }
-    
+    if (listen(listener, SOMAXCONN) < 0)
+        throw std::runtime_error("listen failed");
+
     return listener;
 }
 
-void Server::add_to_pfds(int *newfd, int *fd_count, int *fd_size)
+
+void Server::add_fd(int fd)
 {
-    (void)fd_size;
-    struct pollfd pfd;
-    pfd.fd = *newfd;
+    pollfd pfd;
+    pfd.fd = fd;
     pfd.events = POLLIN;
     pfd.revents = 0;
     pfds.push_back(pfd);
-    (*fd_count)++;
-
 }
 
-void Server::handle_new_connection (int listener, int *fd_count, int *fd_size)
+
+void Server::handle_new_connection()
 {
-    struct sockaddr_storage remoteaddr; //cli adderess
-    struct sockaddr_in *s = (struct sockaddr_in*)&remoteaddr;
-    
-    socklen_t addrlen;
-    int newfd;
-    
-    char remoteIP[INET_ADDRSTRLEN];
-    
-    addrlen = sizeof(remoteaddr);
-    
-    newfd = accept(listener, (struct sockaddr*) &remoteaddr, &addrlen);
+    sockaddr_storage remoteaddr;
+    socklen_t addrlen = sizeof(remoteaddr);
+
+    int newfd = accept(listener, (sockaddr *)&remoteaddr, &addrlen);
     if (newfd < 0)
-        throw std::runtime_error("accept error");
-    std::cout << "new connection from " << inet_ntop(remoteaddr.ss_family, &(s->sin_addr), remoteIP, sizeof(remoteIP)) << " on socket " << newfd << std::endl;
-    
-    add_to_pfds(&newfd, fd_count, fd_size);
+        return;
+
+    make_non_blocking(newfd);
+    add_fd(newfd);
+    char ip[INET_ADDRSTRLEN];
+    sockaddr_in *s = (sockaddr_in *)&remoteaddr;
+    inet_ntop(AF_INET, &s->sin_addr, ip, sizeof(ip));
+
+    std::cout << "New connection from " << ip
+              << " on socket " << newfd << std::endl;
 }
 
-void Server::del_from_pfds(int i ,int *fd_count)
+
+void Server::handle_client(size_t &i)
 {
-    pfds[i].fd = -1;
+char buffer[4096];
+    int fd = pfds[i].fd;
 
-    (*fd_count)--;
-}
+    int nbytes = recv(fd, buffer, sizeof(buffer) - 1, 0);
 
-void Server::handle_client(int listener, int *fd_count, int *i)
-{
-    char buffer[4096];
-    
-    int nbytes = recv(pfds[*i].fd, buffer, sizeof(buffer), 0);
+    if (nbytes < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) 
+        {
+            i++;
+            return;
+        }
+        nbytes = 0; 
+    }
 
-    int sender_fd = pfds[*i].fd;
+    if (nbytes == 0) {
+        std::cout << "Socket " << fd << " disconnected\n";
+        close(fd);
+        pfds.erase(pfds.begin() + i);
+        return; 
+    }
 
-    if (nbytes <= 0)
+    buffer[nbytes] = '\0';
+    std::cout << "Received from " << fd << ": " << buffer;
+
+    for (size_t j = 0; j < pfds.size(); j++)
     {
-        if (nbytes == 0) //closed connection
-        {
-            std::cout << "socket " << pfds[*i].fd << " hung up\n";
-        }
-        else
-            perror("recv");
-        
-        close(pfds[*i].fd);
-        del_from_pfds(*i , fd_count);
+        if (pfds[j].fd != listener && pfds[j].fd != fd)
+            send(pfds[j].fd, buffer, nbytes, 0);
     }
-    else
-    {
-        std::cout << "server : received from " << pfds[*i].fd << " :" << buffer;
 
-        for (int j = 0; j < *fd_count; j++)
-        {
-            int dest_fd = pfds[j].fd;
-
-            if (pfds[j].fd != listener && pfds[j].fd != sender_fd)
-            {
-                // std::string msg =  "new message : " + std::string(buffer);
-                int s_bytes = send(dest_fd, buffer, nbytes, 0);
-                if (s_bytes < 0)
-                    throw std::runtime_error("send fail");
-            }
-
-        }
-        
-    }
-        
+    i++;
 }
 
-void Server::process_connections(int listener, int *fd_count, int *fd_size)
+
+void Server::server_run(const char *port)
 {
-    for (int i = 0; i < *fd_count; i++)
-    { 
-        if (pfds[i].revents & POLLIN)
-        {
-            if (pfds[i].fd == listener)
-            {
-                std::cout << "new\n";
-                handle_new_connection(listener, fd_count, fd_size); //if we r the listener its a new connection
-            }
-            else
-                handle_client(listener, fd_count, &i); // regular client
-        }
-    }
-    
-}
+    listener = get_listening_socket(port);
+    add_fd(listener);
 
-void Server::server_init() 
-{
-    fd_size = 5;
-    fd_count = 0;
-    listener = -1;
-
-    listener = get_listening_socket();
-    if (listener == -1)
-        throw std::runtime_error("error in listening socket\n");
-    fd_count = 1;
-
-    struct pollfd pfd;
-    pfd.fd = listener;
-    pfd.events = POLLIN;
-    pfd.revents = 0;
-
-    pfds.push_back(pfd);
-
-    std::cout << "server waiting for connection ..." << std::endl;
+    std::cout << "Server listening on port " << port << std::endl;
 
     while (true)
     {
-        int pollcount = poll(&pfds[0], fd_count, -1);
-        if (pollcount == -1)
-            throw std::runtime_error("poll\n");
-        
-        process_connections(listener, &fd_count, &fd_size);
+        if (poll(pfds.data(), pfds.size(), -1) < 0)
+            throw std::runtime_error("poll failed");
+
+        for (size_t i = 0; i < pfds.size(); )
+        {
+            if (pfds[i].revents & POLLIN)
+            {
+                if (pfds[i].fd == listener)
+                {
+                    handle_new_connection();
+                    i++;
+                }
+                else
+                    handle_client(i);
+            }
+            else
+                i++;
+        }
     }
 }
 
 
 Server::~Server()
-{}
+{
+    for (size_t i = 0; i < pfds.size(); i++)
+        close(pfds[i].fd);
+}
