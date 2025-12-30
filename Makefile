@@ -2,9 +2,24 @@ NAME = ircserv
 
 CXX = c++
 
-CXXFLAGS = -Wextra -Wall -Werror -std=c++98 -I./Includes
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./Includes
 
-SRC = $(wildcard *.cpp Server/*.cpp Client/*.cpp Client/Commands/*.cpp)
+SRC = main.cpp \
+      Server/server.cpp \
+      Client/Client.cpp \
+      Channel/Channel.cpp \
+      Client/Commands/PASS.cpp \
+      Client/Commands/NICK.cpp \
+      Client/Commands/USER.cpp \
+      Client/Commands/JOIN.cpp \
+      Client/Commands/PART.cpp \
+      Client/Commands/PRIVMSG.cpp \
+      Client/Commands/KICK.cpp \
+      Client/Commands/INVITE.cpp \
+      Client/Commands/TOPIC.cpp \
+      Client/Commands/MODE.cpp \
+      Client/Commands/QUIT.cpp \
+      Client/Commands/PING.cpp
 
 OBJ = $(SRC:.cpp=.o)
 
@@ -14,6 +29,9 @@ all: $(NAME)
 
 $(NAME): $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(OBJ)
